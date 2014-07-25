@@ -257,27 +257,33 @@ static std::ostream &TrieToTXT( std::ostream &stream, Trie &rTrie )
 {
     std::vector<TrieNode*> vNodes = rTrie.CollectAllNodes( rTrie.GetRoot() );
     for( size_t ii = 0; ii < vNodes.size(); ii++ ){
-        std::string sVal = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->GetValueAsString();
+        std::string sCVarName = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_sVarName;
+        try {
+            std::string sVal = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->GetValueAsString();
 
-        if( !sVal.empty() ) {
-            std::string sCVarName = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_sVarName;
-            if( !rTrie.IsNameAcceptable( sCVarName ) ) {
-                if( rTrie.IsVerbose() ) {
-                    printf( "NOT saving %s (not in acceptable name list).\n", sCVarName.c_str() );
+            if( !sVal.empty() ) {
+                if( !rTrie.IsNameAcceptable( sCVarName ) ) {
+                    if( rTrie.IsVerbose() ) {
+                        printf( "NOT saving %s (not in acceptable name list).\n", sCVarName.c_str() );
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if( !((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_bSerialise ) {
-                if( rTrie.IsVerbose() ) {
-                    printf( "NOT saving %s (set as not savable at construction time).\n", sCVarName.c_str() );
+                if( !((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_bSerialise ) {
+                    if( rTrie.IsVerbose() ) {
+                        printf( "NOT saving %s (set as not savable at construction time).\n", sCVarName.c_str() );
+                    }
+                    continue;
                 }
-                continue;
+                if( rTrie.IsVerbose() ) {
+                    printf( "Saving \"%-*s\" with value \"%s\".\n", *rTrie.m_pVerboseCVarNamePaddingWidth,
+                            sCVarName.c_str(), sVal.c_str() );
+                }
+                stream << sCVarName << " = " << sVal << std::endl;
             }
-            if( rTrie.IsVerbose() ) {
-                printf( "Saving \"%-*s\" with value \"%s\".\n", *rTrie.m_pVerboseCVarNamePaddingWidth,
-                        sCVarName.c_str(), sVal.c_str() );
+        } catch (...) {
+            if (rTrie.IsVerbose()) {
+                printf("NOT saving %s. Error whilst serializing.\n", sCVarName.c_str());
             }
-            stream << sCVarName << " = " << sVal << std::endl;
         }
     }
 	return stream;
@@ -288,34 +294,40 @@ static std::ostream &TrieToXML( std::ostream &stream, Trie &rTrie )
 {
     std::vector<TrieNode*> vNodes = rTrie.CollectAllNodes( rTrie.GetRoot() );
     stream << CVarUtils::CVarSpc() << "<cvars>" << std::endl;
-    for( size_t ii = 0; ii < vNodes.size(); ii++ ){
-        std::string sVal = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->GetValueAsString();
+    for( size_t ii = 0; ii < vNodes.size(); ii++ ) {
+        std::string sCVarName = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_sVarName;
+        try {
+            std::string sVal = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->GetValueAsString();
 
-        if( !sVal.empty() ) {
-            std::string sCVarName = ((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_sVarName;
-            if( !rTrie.IsNameAcceptable( sCVarName ) ) {
-                if( rTrie.IsVerbose() ) {
-                    printf( "NOT saving %s (not in acceptable name list).\n", sCVarName.c_str() );
+            if( !sVal.empty() ) {
+                if( !rTrie.IsNameAcceptable( sCVarName ) ) {
+                    if( rTrie.IsVerbose() ) {
+                        printf( "NOT saving %s (not in acceptable name list).\n", sCVarName.c_str() );
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if( !((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_bSerialise ) {
-                if( rTrie.IsVerbose() ) {
-                    printf( "NOT saving %s (set as not savable at construction time).\n", sCVarName.c_str() );
+                if( !((CVarUtils::CVar<int>*)vNodes[ii]->m_pNodeData)->m_bSerialise ) {
+                    if( rTrie.IsVerbose() ) {
+                        printf( "NOT saving %s (set as not savable at construction time).\n", sCVarName.c_str() );
+                    }
+                    continue;
                 }
-                continue;
+                if( rTrie.IsVerbose() ) {
+                    printf( "Saving \"%-*s\" with value \"%s\".\n", *rTrie.m_pVerboseCVarNamePaddingWidth,
+                            sCVarName.c_str(), sVal.c_str() );
+                }
+                CVarUtils::CVarIndent();
+                stream << CVarUtils::CVarSpc() << "<" << sCVarName << ">  ";
+                CVarUtils::CVarIndent();
+                stream << sVal;
+                CVarUtils::CVarUnIndent();
+                stream << CVarUtils::CVarSpc() << "</" << sCVarName << ">" << std::endl;
+                CVarUtils::CVarUnIndent();
             }
-            if( rTrie.IsVerbose() ) {
-                printf( "Saving \"%-*s\" with value \"%s\".\n", *rTrie.m_pVerboseCVarNamePaddingWidth,
-                        sCVarName.c_str(), sVal.c_str() );
+        } catch (...) {
+            if (rTrie.IsVerbose()) {
+                printf("NOT saving %s. Error whilst serializing.\n", sCVarName.c_str());
             }
-            CVarUtils::CVarIndent();
-            stream << CVarUtils::CVarSpc() << "<" << sCVarName << ">  ";
-            CVarUtils::CVarIndent();
-            stream << sVal;
-            CVarUtils::CVarUnIndent();
-            stream << CVarUtils::CVarSpc() << "</" << sCVarName << ">" << std::endl;
-            CVarUtils::CVarUnIndent();
         }
     }
     stream << CVarUtils::CVarSpc() << "</cvars>" << std::endl;
